@@ -166,4 +166,34 @@ This will result in the following query being sent to the database:
 select * from users where username in ('foo', 'bar');
 ```
 
+### Adding type information
+
+Since PugSQL creates the querying methods only when it loads the SQL files, PugSQL itself cannot include the type information for these methods.  If you ask [mypy](https://www.mypy-lang.org/) to check the above examples, it will raise an error that the imported `pugsql` is untyped.  However, you can add a stub to provide the types of your queries.
+
+For the above queries, the following type information in a `pugsql.pyi` file will allow it to pass the checks of mypy:
+
+```python
+# pugsql.pyi
+from typing import TypedDict, Generator
+from sqlalchemy.orm.session import Session
+
+
+class User(TypedDict):
+    user_id: int
+    username: str
+
+
+class _PugSQLModule:
+    def connect(self, uri: str) -> None: ...
+    def ping(self) -> dict[str, int]: ...
+    def user_for_id(self, user_id: int) -> User: ...
+    def search_users(self, pattern: str) -> Generator[User, None, None]: ...
+    def update_username(self, user_id: int, username: str) -> int: ...
+    def get_username(self, user_id: int) -> str: ...
+    def transaction(self) -> Session: ...
+
+
+def module(name: str) -> _PugSQLModule: ...
+```
+
 That's it! Good luck!
